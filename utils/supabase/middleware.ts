@@ -31,13 +31,38 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Define auth-related routes
+  // Define routes
   const authRoutes = ['/login', '/register', '/forgot-password']
-  const isAuthRoute = authRoutes.some(route => 
-    request.nextUrl.pathname.startsWith(route)
-  )
+  const publicRoutes = ['/', ...authRoutes, '/auth']
+  
+  // Check if this is a password reset flow with valid token
+  const isPasswordResetFlow = request.nextUrl.pathname.startsWith('/auth/confirm') && 
+    request.nextUrl.searchParams.get('type') === 'recovery' &&
+    request.nextUrl.searchParams.get('token_hash')
 
-  // First, handle logged-in users
+  // Check if trying to access reset password page
+  const isResetPasswordPage = request.nextUrl.pathname === '/forgot-password/reset-password'
+  
+  // Only allow access to reset password page if coming from valid auth flow
+  if (isResetPasswordPage) {
+    const referer = request.headers.get('referer')
+    const isValidResetAccess = referer?.includes('/auth/confirm') && 
+      referer?.includes('type=recovery')
+    
+    if (!isValidResetAccess) {
+      // Redirect unauthorized attempts to forgot password page
+      const url = request.nextUrl.clone()
+      url.pathname = '/forgot-password'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // If it's a valid password reset flow, allow it regardless of auth status
+  if (isPasswordResetFlow) {
+    return supabaseResponse
+  }
+
+  // Handle logged-in users
   if (user) {
     // Redirect from root to dashboard
     if (request.nextUrl.pathname === '/') {
@@ -47,6 +72,9 @@ export async function updateSession(request: NextRequest) {
     }
     
     // Redirect from auth pages to dashboard
+    const isAuthRoute = authRoutes.some(route => 
+      request.nextUrl.pathname.startsWith(route)
+    )
     if (isAuthRoute) {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
@@ -56,8 +84,7 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Then handle non-logged-in users
-  const publicRoutes = ['/', ...authRoutes, '/auth']
+  // Handle non-logged-in users
   const isPublicRoute = publicRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   )
