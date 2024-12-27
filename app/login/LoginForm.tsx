@@ -74,82 +74,76 @@ export default function LoginPage() {
   const email = form.getValues("email");
 
   return (
-    <main className="flex justify-center items-center min-h-screen">
-      <Card className="w-[380px]">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>Login to your account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              className="flex flex-col gap-2"
-            >
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="password" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {serverError && (
-                <p className="text-red-500 text-sm mt-2">{serverError}</p>
+    <Card className="border-0 shadow-none">
+      <CardContent className="p-0">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="flex flex-col gap-4"
+          >
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-              {/* <Button type="submit">Register</Button> */}
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Please wait
-                  </>
-                ) : (
-                  "Login"
-                )}
-              </Button>
-              <GoogleSignin />
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="flex-col gap-2">
-          <div className="text-muted-foreground text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="underline">
-              Register
-            </Link>
-          </div>
-          <div className="text-muted-foreground text-sm">
-            Forgot password?{" "}
-            <Link
-              href={`/forgot-password${
-                email ? `?email=${encodeURIComponent(email)}` : ""
-              }`}
-              className="underline"
-            >
-              Reset my password
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
-    </main>
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="password" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {serverError && (
+              <p className="text-red-500 text-sm">{serverError}</p>
+            )}
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                "Login"
+              )}
+            </Button>
+           <GoogleSignin />
+          </form>
+        </Form>
+      </CardContent>
+      <CardFooter className="flex-col gap-2 p-0 mt-6">
+        <div className="text-muted-foreground text-sm">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="underline">
+            Register
+          </Link>
+        </div>
+        <div className="text-muted-foreground text-sm">
+          Forgot password?{" "}
+          <Link
+            href={`/forgot-password${
+              email ? `?email=${encodeURIComponent(email)}` : ""
+            }`}
+            className="underline"
+          >
+            Reset my password
+          </Link>
+        </div>
+      </CardFooter>
+    </Card>
   );
+
 }
