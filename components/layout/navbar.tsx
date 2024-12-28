@@ -32,10 +32,10 @@ export function Navbar() {
 
           <div className="flex items-center space-x-4">
             <Button variant="ghost">
-              <Link href="/signin">Sign In</Link>
+              <Link href="/login">Sign In</Link>
               </Button>
             <Button>
-              <Link href="/signup">Get Started</Link>
+              <Link href="/register">Get Started</Link>
               </Button>
           </div>
         </div>

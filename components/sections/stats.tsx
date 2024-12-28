@@ -3,19 +3,19 @@ import { Users, Star, Globe2 } from 'lucide-react';
 const stats = [
   {
     icon: <Users className="h-6 w-6 text-blue-600" />,
-    value: "2,500+",
+    value: "50+",
     label: "Active Mentors",
     description: "Expert mentors from top companies"
   },
   {
     icon: <Star className="h-6 w-6 text-blue-600" />,
-    value: "15,000+",
+    value: "250+",
     label: "Successful Matches",
     description: "Happy mentees achieving their goals"
   },
   {
     icon: <Globe2 className="h-6 w-6 text-blue-600" />,
-    value: "100+",
+    value: "4",
     label: "Countries",
     description: "Global mentorship community"
   }
