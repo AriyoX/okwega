@@ -97,7 +97,7 @@ export async function updateSession(request: NextRequest) {
     // Check if user is a mentor who needs verification
     const isMentor = userProfile?.role === 'mentor'
     const needsVerification = isMentor && 
-      (!userProfile?.verification_status || userProfile?.verification_status === 'pending')
+      (!userProfile?.verification_status || userProfile?.verification_status !== 'verified')
     const isVerificationPage = verificationRoutes.some(route =>
       request.nextUrl.pathname.startsWith(route)
     )
