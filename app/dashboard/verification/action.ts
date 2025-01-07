@@ -50,43 +50,46 @@ export async function submitMentorVerification(formData: MentorVerificationData)
   } = await supabase.auth.getSession()
 
   if (!session) {
-    redirect('/login')
+    throw new Error('Not authenticated')
   }
 
-  // Convert education string to array
-  const educationArray = formData.education.split(';').map(edu => edu.trim());
-  
-  // Convert work experience string to array
-  const workExperienceArray = formData.workExperience.split(';').map(exp => exp.trim());
-  
-  // Ensure areas of expertise is properly formatted
-  const expertiseArray = formData.areasOfExpertise.filter(area => area.trim() !== '');
+  /*
+  TODO: Add an archiving mechanism here to keep track of previous verification requests
+  */
 
+  try {
+    // First delete any existing verification request
+    await supabase
+      .from('mentor_verifications')
+      .delete()
+      .eq('user_id', session.user.id);
 
-  const { data, error } = await supabase
-    .from('mentor_verifications')
-    .insert({
-      user_id: session.user.id,
-      education: educationArray,
-      work_experience: workExperienceArray,
-      areas_of_expertise: expertiseArray,
-      linkedin_url: formData.linkedinUrl,
-      resume_url: formData.resumeUrl,
-      additional_notes: formData.additionalNotes
-    })
+    // Then insert the new verification request
+    const [verificationResult, profileResult] = await Promise.all([
+      supabase
+        .from('mentor_verifications')
+        .insert({
+          user_id: session.user.id,
+          education: formData.education.split(';').map(edu => edu.trim()),
+          work_experience: formData.workExperience.split(';').map(exp => exp.trim()),
+          areas_of_expertise: formData.areasOfExpertise.filter(area => area.trim() !== ''),
+          linkedin_url: formData.linkedinUrl,
+          resume_url: formData.resumeUrl,
+          additional_notes: formData.additionalNotes
+        }),
+      
+      supabase
+        .from('profiles')
+        .update({ verification_status: 'pending' })
+        .eq('id', session.user.id)
+    ]);
 
-  if (error) {
-    throw error
+    if (verificationResult.error) throw verificationResult.error;
+    if (profileResult.error) throw profileResult.error;
+
+    return verificationResult.data;
+  } catch (error) {
+    console.error('Error submitting verification:', error);
+    throw error;
   }
-
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({ verification_status: 'pending' })
-    .eq('id', session.user.id)
-
-  if (profileError) {
-    throw profileError
-  }
-
-  return data
 }
