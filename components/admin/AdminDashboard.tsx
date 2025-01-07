@@ -18,30 +18,31 @@ import {
 } from "@/components/ui/table";
 
 interface User {
-    email: string;
-    id: string;
+  email: string;
+  id: string;
 }
-  
-interface Verification {
-    id: string;
-    submitted_at: string;
-    status: 'pending' | 'verified' | 'rejected';
-    education: string[];
-    work_experience: string[];
-    areas_of_expertise: string[];
-    linkedin_url: string;
-    resume_url: string;
-    user_id: string;
-    user: User;
+
+interface ProcessedVerification {
+  id: string;
+  submitted_at: string;
+  status: 'pending' | 'verified' | 'rejected';
+  education: string[];
+  work_experience: string[];
+  areas_of_expertise: string[];
+  linkedin_url: string | null;
+  resume_url: string | null;
+  additional_notes: string | null;
+  user_id: string;
+  user: User;
 }
-  
+
 interface Props {
-    verifications: Verification[];
+  verifications: ProcessedVerification[];
 }
 
 const AdminDashboard = ({ verifications: initialVerifications }: Props) => {
-  const [verifications, setVerifications] = useState<Verification[]>(initialVerifications);
-  const [selectedVerification, setSelectedVerification] = useState<Verification | null>(null);
+  const [verifications, setVerifications] = useState<ProcessedVerification[]>(initialVerifications);
+  const [selectedVerification, setSelectedVerification] = useState<ProcessedVerification | null>(null);
   const [reviewNotes, setReviewNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,32 +54,29 @@ const AdminDashboard = ({ verifications: initialVerifications }: Props) => {
     
     setIsLoading(true);
     try {
-      // First update the verification record
-      const { data: verificationData, error: verificationError } = await supabase
+      const timestamp = new Date().toISOString();
+
+      // Update verification record
+      const { error: verificationError } = await supabase
         .from('mentor_verifications')
         .update({
           status: action,
           reviewer_notes: reviewNotes,
-          reviewed_at: new Date().toISOString()
+          reviewed_at: timestamp
         })
         .eq('id', verificationId);
   
-      console.log('Verification update result:', { data: verificationData, error: verificationError });
-  
       if (verificationError) throw verificationError;
   
-      // Then update the profile using the user_id
-      const { data: profileData, error: profileError } = await supabase
+      // Update profile status
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           verification_status: action,
-          verification_reviewed_at: new Date().toISOString(),
+          verification_reviewed_at: timestamp,
           verification_reviewer_notes: reviewNotes
         })
-        .eq('id', selectedVerification.user_id)
-        .select();
-  
-      console.log('Profile update result:', { data: profileData, error: profileError });
+        .eq('id', selectedVerification.user_id);
   
       if (profileError) throw profileError;
   
@@ -99,7 +97,6 @@ const AdminDashboard = ({ verifications: initialVerifications }: Props) => {
     }
   };
 
-  // Rest of the component remains the same...
   const getStatusBadge = (status: 'pending' | 'verified' | 'rejected') => {
     const styles = {
       pending: 'bg-yellow-100 text-yellow-800',
@@ -209,29 +206,40 @@ const AdminDashboard = ({ verifications: initialVerifications }: Props) => {
                 </div>
               </div>
 
+              {selectedVerification.additional_notes && (
+                <div>
+                  <h4 className="font-medium mb-2">Additional Notes</h4>
+                  <p>{selectedVerification.additional_notes}</p>
+                </div>
+              )}
+
               <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  <a
-                    href={selectedVerification.linkedin_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    LinkedIn Profile
-                  </a>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4" />
-                  <a
-                    href={selectedVerification.resume_url}
-                    target="_blank"
-                    rel="noopener noreferrer" 
-                    className="text-blue-600 hover:underline"
-                  >
-                    Resume
-                  </a>
-                </div>
+                {selectedVerification.linkedin_url && (
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    <a
+                      href={selectedVerification.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      LinkedIn Profile
+                    </a>
+                  </div>
+                )}
+                {selectedVerification.resume_url && (
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-4 w-4" />
+                    <a
+                      href={selectedVerification.resume_url}
+                      target="_blank"
+                      rel="noopener noreferrer" 
+                      className="text-blue-600 hover:underline"
+                    >
+                      Resume
+                    </a>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -268,7 +276,6 @@ const AdminDashboard = ({ verifications: initialVerifications }: Props) => {
           </CardContent>
         </Card>
       )}
-
     </div>
   );
 };

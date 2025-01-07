@@ -45,6 +45,10 @@ const MentorVerificationForm = () => {
     }));
   };
 
+  /*
+  TO: DO
+    Implement a function to render a status banner based on the verification status
+  */
   const renderStatusBanner = () => {
     switch(status) {
       case 'pending':

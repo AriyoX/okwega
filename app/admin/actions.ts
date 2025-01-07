@@ -3,63 +3,79 @@
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-export async function updateVerificationStatus(
-  verificationId: string,
-  adminUserId: string,  // Renamed to be more explicit
-  status: 'verified' | 'rejected',
-  notes: string
-) {
+interface UpdateVerificationParams {
+  verificationId: string;
+  adminUserId: string;
+  status: 'verified' | 'rejected';
+  notes: string;
+}
+
+export async function updateVerificationStatus({
+  verificationId,
+  adminUserId,
+  status,
+  notes
+}: UpdateVerificationParams) {
   const supabase = await createClient();
 
   // Check if user is admin
-  const { data: adminProfile } = await supabase
+  const { data: adminProfile, error: adminError } = await supabase
     .from('profiles')
     .select('is_admin')
     .eq('id', adminUserId)
-    .single()
+    .single();
 
-  if (!adminProfile?.is_admin) {
-    throw new Error('Unauthorized')
+  if (adminError) {
+    throw new Error(`Error checking admin status: ${adminError.message}`);
   }
 
-  // First, get the mentor's user ID from the verification record
-  const { data: verification } = await supabase
+  if (!adminProfile?.is_admin) {
+    throw new Error('Unauthorized: User is not an admin');
+  }
+
+  // Get the verification record and associated user_id
+  const { data: verification, error: verificationFetchError } = await supabase
     .from('mentor_verifications')
     .select('user_id')
     .eq('id', verificationId)
-    .single()
+    .single();
 
-  if (!verification) {
-    throw new Error('Verification record not found')
+  if (verificationFetchError || !verification) {
+    throw new Error('Verification record not found');
   }
 
+  // Begin transaction-like updates
+  const timestamp = new Date().toISOString();
+
   // Update verification status
-  const { error: verificationError } = await supabase
+  const { error: verificationUpdateError } = await supabase
     .from('mentor_verifications')
     .update({
       status,
       reviewer_notes: notes,
-      reviewed_at: new Date().toISOString()
+      reviewed_at: timestamp
     })
-    .eq('id', verificationId)
+    .eq('id', verificationId);
 
-  if (verificationError) {
-    throw new Error(`Error updating verification: ${verificationError.message}`)
+  if (verificationUpdateError) {
+    throw new Error(`Error updating verification: ${verificationUpdateError.message}`);
   }
 
-  // Update mentor's profile status using the correct user_id
-  const { error: profileError } = await supabase
+  // Update profile status
+  const { error: profileUpdateError } = await supabase
     .from('profiles')
     .update({
       verification_status: status,
-      verification_reviewed_at: new Date().toISOString(),
+      verification_reviewed_at: timestamp,
       verification_reviewer_notes: notes
     })
-    .eq('id', verification.user_id)
+    .eq('id', verification.user_id);
 
-  if (profileError) {
-    throw new Error(`Error updating profile: ${profileError.message}`)
+  if (profileUpdateError) {
+    // In a real transaction, we would rollback here
+    throw new Error(`Error updating profile: ${profileUpdateError.message}`);
   }
 
-  revalidatePath('/admin')
+  revalidatePath('/admin');
+  return { success: true };
 }
