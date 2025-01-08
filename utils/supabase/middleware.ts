@@ -31,9 +31,21 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  let userProfile = null
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, verification_status')
+      .eq('id', user.id)
+      .single()
+    userProfile = profile
+  }
+
   // Define routes
   const authRoutes = ['/login', '/register', '/forgot-password']
   const publicRoutes = ['/', ...authRoutes, '/auth']
+  const verificationRoutes = ['/dashboard/verification']
+  const adminRoutes = ['/admin']
   
   // Check if this is a password reset flow with valid token
   const isPasswordResetFlow = request.nextUrl.pathname.startsWith('/auth/confirm') && 
@@ -64,24 +76,58 @@ export async function updateSession(request: NextRequest) {
 
   // Handle logged-in users
   if (user) {
-    // Redirect from root to dashboard
+    const isAdminRoute = adminRoutes.some(route =>
+      request.nextUrl.pathname.startsWith(route)
+    )
+    
+    if (isAdminRoute) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+  
+      if (!profile?.is_admin) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+      }
+    }
+    
+    // Check if user is a mentor who needs verification
+    const isMentor = userProfile?.role === 'mentor'
+    const needsVerification = isMentor && 
+      (!userProfile?.verification_status || userProfile?.verification_status !== 'verified')
+    const isVerificationPage = verificationRoutes.some(route =>
+      request.nextUrl.pathname.startsWith(route)
+    )
+
+    // Redirect from root to appropriate page
     if (request.nextUrl.pathname === '/') {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
+      url.pathname = needsVerification ? '/dashboard/verification' : '/dashboard'
       return NextResponse.redirect(url)
     }
     
-    // Redirect from auth pages to dashboard
-    const isAuthRoute = authRoutes.some(route => 
+    // Redirect unverified mentors to verification page
+    if (needsVerification && !isVerificationPage) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard/verification'
+      return NextResponse.redirect(url)
+    }
+
+    // Redirect from auth pages
+    const isAuthRoute = authRoutes.some(route =>
       request.nextUrl.pathname.startsWith(route)
     )
     if (isAuthRoute) {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
+      url.pathname = needsVerification ? '/dashboard/verification' : '/dashboard'
       return NextResponse.redirect(url)
     }
-    
+
     return supabaseResponse
+
   }
 
   // Handle non-logged-in users
