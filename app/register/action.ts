@@ -3,6 +3,7 @@
 import { passwordMatchSchema } from "@/validation/passwordMatchSchema";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
+import { notifyAllAdmins } from '@/utils/emails/helpers';
 
 // Define the role schema
 const roleSchema = z.enum(["mentor", "mentee"]);
@@ -86,6 +87,13 @@ export const registerUser = async ({
       // If profile creation fails, we should log this but still return success
       // since the auth account was created
       console.error('Error creating profile:', profileError);
+    } 
+    console.log('Profile created successfully, sending admin notifications');
+    try {
+        await notifyAllAdmins('new_user', email);
+        console.log('Admin notifications sent successfully');
+      } catch (error) {
+        console.error('Error sending admin notifications:', error);
     }
   }
 

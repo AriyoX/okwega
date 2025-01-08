@@ -1,13 +1,12 @@
 "use client"
 
-import React, { useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card-default';
-import Button from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Check, X, ExternalLink } from 'lucide-react';
-import LogoutButton from '@/app/dashboard/LogoutButton';
+import React, { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card-default'
+import Button from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { Check, X, ExternalLink } from 'lucide-react'
+import LogoutButton from '@/app/dashboard/LogoutButton'
 import {
   Table,
   TableBody,
@@ -15,7 +14,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/components/ui/table"
+import { updateVerificationStatus } from '@/app/admin/action'
 
 interface User {
   email: string;
@@ -46,57 +46,31 @@ const AdminDashboard = ({ verifications: initialVerifications }: Props) => {
   const [reviewNotes, setReviewNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const supabase = createClientComponentClient();
 
   const handleVerificationAction = async (verificationId: string, action: 'verified' | 'rejected') => {
-    if (!selectedVerification) return;
+    if (!selectedVerification) return
     
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const timestamp = new Date().toISOString();
-
-      // Update verification record
-      const { error: verificationError } = await supabase
-        .from('mentor_verifications')
-        .update({
-          status: action,
-          reviewer_notes: reviewNotes,
-          reviewed_at: timestamp
-        })
-        .eq('id', verificationId);
-  
-      if (verificationError) throw verificationError;
-  
-      // Update profile status
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          verification_status: action,
-          verification_reviewed_at: timestamp,
-          verification_reviewer_notes: reviewNotes
-        })
-        .eq('id', selectedVerification.user_id);
-  
-      if (profileError) throw profileError;
-  
+      await updateVerificationStatus(verificationId, action, reviewNotes)
+      
       // Update local state
       setVerifications(verifications.map(v => 
         v.id === verificationId 
           ? { ...v, status: action }
           : v
-      ));
+      ))
       
-      setSelectedVerification(null);
-      setReviewNotes('');
+      setSelectedVerification(null)
+      setReviewNotes('')
     } catch (err) {
-      console.error('Error updating verification:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred updating verification');
+      console.error('Error updating verification:', err)
+      setError(err instanceof Error ? err.message : 'An error occurred updating verification')
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
-
+  }
+ 
   const getStatusBadge = (status: 'pending' | 'verified' | 'rejected') => {
     const styles = {
       pending: 'bg-yellow-100 text-yellow-800',

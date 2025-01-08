@@ -2,7 +2,7 @@
 
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { notifyAllAdmins } from '@/utils/emails/helpers';
 
 interface MentorVerificationData {
   education: string;
@@ -87,6 +87,12 @@ export async function submitMentorVerification(formData: MentorVerificationData)
     if (verificationResult.error) throw verificationResult.error;
     if (profileResult.error) throw profileResult.error;
 
+    try {
+      await notifyAllAdmins('verification_request', session.user.email!);
+    } catch (error) {
+      console.error('Error sending admin notifications:', error);
+    }
+    
     return verificationResult.data;
   } catch (error) {
     console.error('Error submitting verification:', error);
