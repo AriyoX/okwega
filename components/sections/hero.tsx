@@ -1,6 +1,7 @@
 import Button from '../ui/button';
 import { ArrowRight } from 'lucide-react';
 import CompanyLogos from './company-logos';
+import Link from 'next/link';
 
 export function Hero() {
   return (
@@ -19,9 +20,11 @@ export function Hero() {
             <Button size="lg" className="flex items-center gap-2">
               Browse Mentors <ArrowRight className="h-5 w-5" />
             </Button>
-            <Button variant="outline" size="lg">
-              Become a Mentor
-            </Button>
+            <Link href="/register?role=mentor">
+              <Button variant="outline" size="lg">
+                Become a Mentor
+              </Button>
+            </Link>
           </div>
           <CompanyLogos />
         </div>

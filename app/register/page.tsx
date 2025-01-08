@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -211,7 +211,17 @@ const RegistrationForm = ({
 
 // Main Register Component
 export default function Register() {
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialRole = searchParams.get('role') as UserRole;
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(initialRole || null);
+
+  const handleRoleSelect = (role: UserRole) => {
+    setSelectedRole(role);
+    // Update URL when role changes
+    router.push(`/register?role=${role}`);
+  };
+
 
   return (
     <AuthLayout 
@@ -224,7 +234,9 @@ export default function Register() {
       {selectedRole ? (
         <RegistrationForm 
           selectedRole={selectedRole} 
-          onBack={() => setSelectedRole(null)}
+          onBack={() => {setSelectedRole(null);
+                      router.push('/register');
+          }}
         />
       ) : (
         <RoleSelection onRoleSelect={setSelectedRole} />

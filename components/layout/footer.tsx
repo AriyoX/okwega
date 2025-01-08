@@ -5,7 +5,7 @@ import Link from 'next/link';
 const navigation = {
   platform: [
     { name: "Browse Mentors", href: "#" },
-    { name: "Become a Mentor", href: "#" },
+    { name: "Become a Mentor", href: "register?role=mentor" },
     { name: "Pricing", href: "#" },
     { name: "Enterprise", href: "#" },
   ],
