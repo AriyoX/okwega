@@ -1,7 +1,6 @@
 import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation'
 
 export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams } = new URL(request.url)
@@ -17,11 +16,20 @@ export async function GET(request: NextRequest): Promise<Response> {
       token_hash,
     })
     if (!error) {
-      // Return a response that redirects to the next URL
-      return Response.redirect(new URL(next, request.url))
+      // Get the correct base URL based on environment
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                     process.env.NEXT_PUBLIC_VERCEL_URL || 
+                     'http://localhost:3000'
+      
+      // Construct the redirect URL
+      const redirectUrl = new URL(next, baseUrl).toString()
+      return Response.redirect(redirectUrl)
     }
   }
 
-  // Return a response that redirects to the error page
-  return Response.redirect(new URL('/error', request.url))
+  // Use the correct base URL for error redirect as well
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                 process.env.NEXT_PUBLIC_VERCEL_URL || 
+                 'http://localhost:3000'
+  return Response.redirect(new URL('/error', baseUrl))
 }
