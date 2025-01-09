@@ -15,44 +15,21 @@ export async function GET(request: NextRequest): Promise<Response> {
       type,
       token_hash,
     })
-    
     if (!error) {
-      const forwardedHost = request.headers.get("x-forwarded-host");
-      const isLocalEnv = process.env.NODE_ENV === "development";
-      const origin = request.headers.get("origin") || "";
+      // Get the correct base URL based on environment
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                     process.env.NEXT_PUBLIC_VERCEL_URL || 
+                     'http://localhost:3000'
       
-      let baseUrl: string;
-      if (isLocalEnv) {
-        baseUrl = origin;
-      } else if (forwardedHost) {
-        baseUrl = `https://${forwardedHost}`;
-      } else {
-        baseUrl = origin;
-      }
-      
-      // If it's a password reset, redirect to reset password page
-      if (type === 'recovery') {
-        return Response.redirect(`${baseUrl}/forgot-password/reset-password`);
-      }
-      
-      // For other auth flows, use the next parameter
-      return Response.redirect(`${baseUrl}${next}`);
+      // Construct the redirect URL
+      const redirectUrl = new URL(next, baseUrl).toString()
+      return Response.redirect(redirectUrl)
     }
   }
 
-  // Use the same origin handling for error redirect
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const isLocalEnv = process.env.NODE_ENV === "development";
-  const origin = request.headers.get("origin") || "";
-  
-  let baseUrl: string;
-  if (isLocalEnv) {
-    baseUrl = origin;
-  } else if (forwardedHost) {
-    baseUrl = `https://${forwardedHost}`;
-  } else {
-    baseUrl = origin;
-  }
-  
-  return Response.redirect(`${baseUrl}/error`);
+  // Use the correct base URL for error redirect as well
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                 process.env.NEXT_PUBLIC_VERCEL_URL || 
+                 'http://localhost:3000'
+  return Response.redirect(new URL('/error', baseUrl))
 }
