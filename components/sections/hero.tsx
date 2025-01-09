@@ -17,11 +17,11 @@ export function Hero() {
             career advice, and structured learning paths.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button size="lg" className="flex items-center gap-2">
+            <Button size="lg" className="flex items-center gap-2 shadow-md hover:shadow-lg transition-shadow duration-200 bg-blue-600 text-white hover:bg-blue-700">
               Browse Mentors <ArrowRight className="h-5 w-5" />
             </Button>
             <Link href="/register?role=mentor">
-              <Button variant="outline" size="lg">
+              <Button variant="outline" size="lg" className="shadow-md hover:shadow-lg transition-shadow duration-200 border-blue-600 text-blue-600 hover:bg-blue-50">
                 Become a Mentor
               </Button>
             </Link>
