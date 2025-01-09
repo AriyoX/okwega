@@ -46,16 +46,12 @@ export async function updateSession(request: NextRequest) {
   const publicRoutes = ['/', ...authRoutes, '/auth']
   const verificationRoutes = ['/dashboard/verification']
   const adminRoutes = ['/admin']
-
-  // First, check if this is a password reset confirmation
-  const isPasswordResetConfirmation = request.nextUrl.pathname.startsWith('/auth/confirm') && 
+  
+  // Check if this is a password reset flow with valid token
+  const isPasswordResetFlow = request.nextUrl.pathname.startsWith('/auth/confirm') && 
     request.nextUrl.searchParams.get('type') === 'recovery' &&
     request.nextUrl.searchParams.get('token_hash')
 
-  if (isPasswordResetConfirmation) {
-    return supabaseResponse
-  }
-  
   // Check if trying to access reset password page
   const isResetPasswordPage = request.nextUrl.pathname === '/forgot-password/reset-password'
   
@@ -71,6 +67,11 @@ export async function updateSession(request: NextRequest) {
       url.pathname = '/forgot-password'
       return NextResponse.redirect(url)
     }
+  }
+
+  // If it's a valid password reset flow, allow it regardless of auth status
+  if (isPasswordResetFlow) {
+    return supabaseResponse
   }
 
   // Handle logged-in users
@@ -126,6 +127,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     return supabaseResponse
+
   }
 
   // Handle non-logged-in users
