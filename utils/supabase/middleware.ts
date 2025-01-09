@@ -79,6 +79,10 @@ export async function updateSession(request: NextRequest) {
     const isAdminRoute = adminRoutes.some(route =>
       request.nextUrl.pathname.startsWith(route)
     )
+
+    if (isResetPasswordPage) { 
+      return supabaseResponse;
+    }
     
     if (isAdminRoute) {
       const { data: profile } = await supabase
