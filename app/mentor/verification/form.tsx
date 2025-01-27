@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { submitMentorVerification } from './action';
-import LogoutButton from '../LogoutButton';
+import LogoutButton from '../dashboard/LogoutButton';
 import { useRouter } from 'next/navigation';
 
 interface MentorVerificationFormProps {
@@ -116,7 +116,7 @@ const MentorVerificationForm = ({
               </AlertDescription>
             </Alert>
             <Button className="w-full">
-              <Link href="/dashboard">
+              <Link href="/mentor/dashboard">
                 Go to Dashboard
               </Link>
             </Button>

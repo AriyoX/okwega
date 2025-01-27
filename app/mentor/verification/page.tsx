@@ -22,7 +22,7 @@ export default async function VerificationPage() {
 
   // If user is not a mentor or already verified, redirect to dashboard
   if (profile?.role !== 'mentor' || profile?.verification_status === 'verified') {
-    redirect('/dashboard')
+    redirect('/mentor/dashboard')
   }
 
   return (

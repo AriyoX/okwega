@@ -44,41 +44,50 @@ export async function updateSession(request: NextRequest) {
   // Define routes
   const authRoutes = ['/login', '/register', '/forgot-password']
   const publicRoutes = ['/', ...authRoutes, '/auth']
-  const verificationRoutes = ['/dashboard/verification']
   const adminRoutes = ['/admin']
+  const roleBasePaths = ['/mentor', '/mentee']
   
-  // Check if this is a password reset flow with valid token
+  // Password reset flow checks
   const isPasswordResetFlow = request.nextUrl.pathname.startsWith('/auth/confirm') && 
     request.nextUrl.searchParams.get('type') === 'recovery' &&
     request.nextUrl.searchParams.get('token_hash')
 
-  // Check if trying to access reset password page
   const isResetPasswordPage = request.nextUrl.pathname === '/forgot-password/reset-password'
   
-  // Only allow access to reset password page if coming from valid auth flow
   if (isResetPasswordPage) {
     const referer = request.headers.get('referer')
     const isValidResetAccess = referer?.includes('/auth/confirm') && 
       referer?.includes('type=recovery')
     
     if (!isValidResetAccess) {
-      // Redirect unauthorized attempts to forgot password page
       const url = request.nextUrl.clone()
       url.pathname = '/forgot-password'
       return NextResponse.redirect(url)
     }
   }
 
-  // If it's a valid password reset flow, allow it regardless of auth status
   if (isPasswordResetFlow) {
     return supabaseResponse
   }
 
-  // Handle logged-in users
   if (user) {
+    const userRole = userProfile?.role
     const isAdminRoute = adminRoutes.some(route =>
       request.nextUrl.pathname.startsWith(route)
     )
+
+    // Role-based path protection
+    if (userRole === 'mentor' && request.nextUrl.pathname.startsWith('/mentee')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/mentor/dashboard'
+      return NextResponse.redirect(url)
+    }
+    
+    if (userRole === 'mentee' && request.nextUrl.pathname.startsWith('/mentor')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/mentee/dashboard'
+      return NextResponse.redirect(url)
+    }
 
     if (isResetPasswordPage) { 
       return supabaseResponse;
@@ -93,58 +102,66 @@ export async function updateSession(request: NextRequest) {
   
       if (!profile?.is_admin) {
         const url = request.nextUrl.clone()
-        url.pathname = '/dashboard'
+        url.pathname = userRole === 'mentor' ? '/mentor/dashboard' : '/mentee/dashboard'
         return NextResponse.redirect(url)
       }
     }
     
-    // Check if user is a mentor who needs verification
-    const isMentor = userProfile?.role === 'mentor'
+    // Verification logic
+    const isMentor = userRole === 'mentor'
+    const verificationPath = isMentor ? '/mentor/verification' : null
     const needsVerification = isMentor && 
       (!userProfile?.verification_status || userProfile?.verification_status !== 'verified')
-    const isVerificationPage = verificationRoutes.some(route =>
-      request.nextUrl.pathname.startsWith(route)
-    )
+    const isVerificationPage = verificationPath && 
+      request.nextUrl.pathname.startsWith(verificationPath)
 
-    // Redirect from root to appropriate page
+    // Root path redirect
     if (request.nextUrl.pathname === '/') {
       const url = request.nextUrl.clone()
-      url.pathname = needsVerification ? '/dashboard/verification' : '/dashboard'
+      url.pathname = needsVerification ? verificationPath! : 
+        (userRole === 'mentor' ? '/mentor/dashboard' : '/mentee/dashboard')
       return NextResponse.redirect(url)
     }
     
-    // Redirect unverified mentors to verification page
+    // Verification redirect
     if (needsVerification && !isVerificationPage) {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard/verification'
+      url.pathname = verificationPath!
       return NextResponse.redirect(url)
     }
 
-    // Redirect from auth pages
+    // Auth route redirect for authenticated users
     const isAuthRoute = authRoutes.some(route =>
       request.nextUrl.pathname.startsWith(route)
     )
     if (isAuthRoute) {
       const url = request.nextUrl.clone()
-      url.pathname = needsVerification ? '/dashboard/verification' : '/dashboard'
+      url.pathname = needsVerification ? verificationPath! : 
+        (userRole === 'mentor' ? '/mentor/dashboard' : '/mentee/dashboard')
       return NextResponse.redirect(url)
     }
 
     return supabaseResponse
-
   }
 
-  // Handle non-logged-in users
+  // Handle non-authenticated users
   const isPublicRoute = publicRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   )
 
-  // Allow access to public routes
+  // Redirect to login if trying to access role-specific pages
+  if (roleBasePaths.some(path => 
+    request.nextUrl.pathname.startsWith(path)
+  )) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
   if (isPublicRoute) {
     return supabaseResponse
   }
 
-  // Redirect to home page if trying to access protected route
   const url = request.nextUrl.clone()
   url.pathname = '/'
   return NextResponse.redirect(url)
