@@ -6,7 +6,7 @@ import Button from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Check, X, ExternalLink } from 'lucide-react'
-import LogoutButton from '@/app/dashboard/LogoutButton'
+import LogoutButton from './LogoutButton'
 import {
   Table,
   TableBody,
