@@ -15,21 +15,29 @@ export async function GET(request: NextRequest): Promise<Response> {
       type,
       token_hash,
     })
+
+    // Get the base URL
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                   process.env.NEXT_PUBLIC_VERCEL_URL || 
+                   'http://localhost:3000'
+
+    // Handle password reset flow specifically
+    if (type === 'recovery' && !error) {
+      // Redirect to the reset password page instead of default next path
+      return Response.redirect(new URL('/forgot-password/reset-password', baseUrl))
+    }
+
     if (!error) {
-      // Get the correct base URL based on environment
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                     process.env.NEXT_PUBLIC_VERCEL_URL || 
-                     'http://localhost:3000'
-      
-      // Construct the redirect URL
+      // For other successful verifications (email, etc)
       const redirectUrl = new URL(next, baseUrl).toString()
       return Response.redirect(redirectUrl)
     }
   }
 
-  // Use the correct base URL for error redirect as well
+  // Handle errors
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
                  process.env.NEXT_PUBLIC_VERCEL_URL || 
                  'http://localhost:3000'
+  
   return Response.redirect(new URL('/error', baseUrl))
 }
