@@ -80,3 +80,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem; /* Adjust as needed */
+}
+
+/* Responsive adjust for smaller screens */
+@media (max-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr; /* Single column on small screens */
+  }
+}
+
+.container-profile {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
