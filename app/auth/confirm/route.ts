@@ -1,6 +1,7 @@
 import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest): Promise<Response> {
   const { searchParams } = new URL(request.url)
@@ -8,36 +9,44 @@ export async function GET(request: NextRequest): Promise<Response> {
   const type = searchParams.get('type') as EmailOtpType | null
   const next = searchParams.get('next') ?? '/'
 
-  if (token_hash && type) {
-    const supabase = await createClient()
-
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    })
-
-    // Get the base URL
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                   process.env.NEXT_PUBLIC_VERCEL_URL || 
-                   'http://localhost:3000'
-
-    // Handle password reset flow specifically
-    if (type === 'recovery' && !error) {
-      // Redirect to the reset password page instead of default next path
-      return Response.redirect(new URL('/forgot-password/reset-password', baseUrl))
-    }
-
-    if (!error) {
-      // For other successful verifications (email, etc)
-      const redirectUrl = new URL(next, baseUrl).toString()
-      return Response.redirect(redirectUrl)
-    }
-  }
-
-  // Handle errors
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
                  process.env.NEXT_PUBLIC_VERCEL_URL || 
                  'http://localhost:3000'
-  
+
+  if (token_hash && type) {
+    const supabase = await createClient()
+
+    if (type === 'recovery') {
+      // For password recovery flow
+      const { error } = await supabase.auth.verifyOtp({
+        type,
+        token_hash,
+      })
+
+      if (!error) {
+        // Clear the session cookies
+        const cookieStore = cookies()
+        cookieStore.delete('sb-access-token')
+        cookieStore.delete('sb-refresh-token')
+        
+        // Redirect to reset password page
+        return Response.redirect(
+          new URL('/forgot-password/reset-password', baseUrl)
+        )
+      }
+    } else {
+      // For other types (email verification etc)
+      const { error } = await supabase.auth.verifyOtp({
+        type,
+        token_hash,
+      })
+
+      if (!error) {
+        const redirectUrl = new URL(next, baseUrl).toString()
+        return Response.redirect(redirectUrl)
+      }
+    }
+  }
+
   return Response.redirect(new URL('/error', baseUrl))
 }
