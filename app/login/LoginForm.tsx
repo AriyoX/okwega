@@ -61,7 +61,8 @@ export default function LoginPage() {
         setServerError(response.message);
       } else {
         // Redirect to the dashboard page
-        router.push("/dashboard");
+        router.push("/");
+        router.refresh(); 
       }
     } catch (error) {
       setServerError("An unexpected error occurred. Please try again.");

@@ -7,7 +7,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient ()
+  const supabase = await createClient()
   
   const {
     data: { session },
@@ -17,15 +17,19 @@ export default async function AdminLayout({
     redirect('/login')
   }
 
-  // Check if user is admin
+  // Get user role and admin status
   const { data: profile } = await supabase
     .from('profiles')
-    .select('is_admin')
+    .select('is_admin, role')
     .eq('id', session.user.id)
     .single()
 
   if (!profile?.is_admin) {
-    redirect('/dashboard')
+    // Redirect to role-specific dashboard
+    const redirectPath = profile?.role === 'mentor' 
+      ? '/mentor/dashboard' 
+      : '/mentee/dashboard'
+    redirect(redirectPath)
   }
 
   return <div className="container mx-auto py-8">{children}</div>
