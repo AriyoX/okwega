@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -109,17 +109,17 @@ const RegistrationForm = ({
       const response = await registerUser({
         email: data.email,
         password: data.password,
-        passwordConfirm: data.passwordConfirm,
+        passwordConfirm: data.password,
         role: selectedRole,
       });
 
       if (response.error) {
         setServerError(response.message);
-        // Stay on the current page with the form when there's an error
         return;
-      } else {
-        router.push("/register/confirmation");
       }
+      
+      // Use replace to avoid history stack issues
+      router.replace("/register/confirmation");
     } catch (error) {
       setServerError("An unexpected error occurred. Please try again.");
     } finally {
@@ -215,8 +215,22 @@ const RegistrationForm = ({
 export default function Register() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
   const initialRole = searchParams.get('role') as UserRole;
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(initialRole || null);
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+
+  // Handle hydration
+  useEffect(() => {
+    setMounted(true);
+    if (initialRole && ["mentor", "mentee"].includes(initialRole)) {
+      setSelectedRole(initialRole);
+    }
+  }, [initialRole]);
+
+  // Skip rendering until mounted
+  if (!mounted) {
+    return null;
+  }
 
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role);
