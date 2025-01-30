@@ -69,7 +69,7 @@ export default async function Dashboard() {
           <p className="text-gray-600">
             Weekly Availability Hours:{" "}
             <span className="font-medium">
-              {profile?.weekly_availability_hours || 0} years
+              {profile?.weekly_availability_hours || 0} hours
             </span>
           </p>
         </div>
