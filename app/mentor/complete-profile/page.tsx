@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card-default'
 import { Input } from '@/components/ui/input'
 import Button from '@/components/ui/button'
@@ -12,8 +13,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2 } from 'lucide-react'
 import { updateProfile, getProfile } from './action'
 import ProfileHeader from '@/components/complete-profile/ProfileHeader';
+import { uploadAvatar } from '@/actions/upload-avatar'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 interface ProfileFormData {
+  avatar_url: string
   full_name: string
   bio: string
   languages: string[]
@@ -33,6 +37,7 @@ interface ProfileFormData {
 }
 
 const initialProfile: ProfileFormData = {
+  avatar_url: '',
   full_name: '',
   bio: '',
   languages: [],
@@ -56,6 +61,84 @@ export default function CompleteProfile() {
   const [profile, setProfile] = useState<ProfileFormData>(initialProfile)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const supabase = createClientComponentClient()
+
+  const handleAvatarUpload = async (file: File) => {
+    try {
+      setLoading(true)
+      setError(null)
+  
+      const formData = new FormData()
+      formData.append('avatar', file)
+  
+      const { publicUrl, error } = await uploadAvatar(formData)
+      if (error) throw new Error(error)
+  
+      if (profile.avatar_url) {
+        const oldFileName = profile.avatar_url.split('/').pop()
+        if (oldFileName) {
+          await supabase.storage
+            .from('avatars')
+            .remove([oldFileName.split('?')[0]]) // Remove query params from filename
+        }
+      }
+  
+      // Add cache busting query parameter
+      const timestamp = Date.now()
+      setProfile(prev => ({ 
+        ...prev, 
+        avatar_url: `${publicUrl}?${timestamp}` || '' 
+      }))
+    } catch (error: any) {
+      setError(error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+  // Update the avatar input JSX
+  const renderAvatarInput = () => (
+    <div className="space-y-2">
+      <Label htmlFor="avatar">Profile Picture</Label>
+      <div className="flex items-center space-x-4">
+      {profile.avatar_url && (
+          <Image 
+            src={profile.avatar_url}
+            alt="Profile"
+            width={80}
+            height={80}
+            className="rounded-full object-cover"
+            priority // Add this for important images
+            onError={(e) => {
+              // Fallback to empty avatar if image fails to load
+              e.currentTarget.src = '/default-avatar.png'
+            }}
+          />
+        )}
+        <div className="flex-1">
+          <Input
+            id="avatar"
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleAvatarUpload(file)
+            }}
+            disabled={loading}
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            Maximum file size: 2MB. Supported formats: JPG, PNG, GIF
+          </p>
+        </div>
+      </div>
+      {loading && (
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm">Uploading...</span>
+        </div>
+      )}
+    </div>
+  )
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -137,6 +220,7 @@ export default function CompleteProfile() {
                 <div className="space-y-4">
                   {/* Single column inputs */}
                   <div className="space-y-4">
+                    {renderAvatarInput()}
                     <div>
                       <Label htmlFor="full_name">Full Name *</Label>
                       <Input

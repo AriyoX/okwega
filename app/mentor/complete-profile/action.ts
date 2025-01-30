@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 interface ProfileFormData {
+  avatar_url: string
   full_name: string
   bio: string
   languages: string[]

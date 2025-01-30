@@ -31,9 +31,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const isStorageApi = request.nextUrl.pathname.startsWith('/storage/v1')
+  if (isStorageApi) {
+    return supabaseResponse
+  }
+
   // Define routes
   const authRoutes = ['/login', '/register', '/forgot-password']
-  const publicRoutes = ['/', ...authRoutes, '/auth', '/mentor/complete-profile', '/mentee/complete-profile']
+  const publicRoutes = ['/', ...authRoutes, '/auth', '/mentor/complete-profile', '/mentee/complete-profile', '/api/upload']
   const adminRoutes = ['/admin']
   const roleBasePaths = ['/mentor', '/mentee']
 
