@@ -110,11 +110,13 @@ const RegistrationForm = ({
         email: data.email,
         password: data.password,
         passwordConfirm: data.passwordConfirm,
-        role: selectedRole, // Include the selected role in the registration
+        role: selectedRole,
       });
 
       if (response.error) {
         setServerError(response.message);
+        // Stay on the current page with the form when there's an error
+        return;
       } else {
         router.push("/register/confirmation");
       }
@@ -218,10 +220,13 @@ export default function Register() {
 
   const handleRoleSelect = (role: UserRole) => {
     setSelectedRole(role);
-    // Update URL when role changes
-    router.push(`/register?role=${role}`);
+    router.replace(`/register?role=${role}`);  // Use replace instead of push
   };
 
+  const onBack = () => {
+    setSelectedRole(null);
+    router.replace('/register');  // Use replace instead of push
+  };
 
   return (
     <AuthLayout 
@@ -234,9 +239,7 @@ export default function Register() {
       {selectedRole ? (
         <RegistrationForm 
           selectedRole={selectedRole} 
-          onBack={() => {setSelectedRole(null);
-                      router.push('/register');
-          }}
+          onBack={onBack}
         />
       ) : (
         <RoleSelection onRoleSelect={setSelectedRole} />
